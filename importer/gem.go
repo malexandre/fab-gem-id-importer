@@ -56,7 +56,7 @@ func (connector *CookieConnector) Connect() bool {
 	data.Set("username", connector.username)
 	data.Set("password", connector.password)
 
-	csrfToken := connector.GetCsrfToken()
+	csrfToken := connector.GetCsrfTokenFromLoginPage()
 	data.Set("csrfmiddlewaretoken", csrfToken)
 
 	req, err := http.NewRequest(http.MethodPost, connector.baseUrl, strings.NewReader(data.Encode()))
@@ -143,38 +143,99 @@ func (connector *CookieConnector) GetUserByGemId(eventId, gemId string) (User, e
 }
 
 func (connector *CookieConnector) AddUsersToEvent(eventId string, users []User) bool {
-	return false
+
+	data := url.Values{}
+	data.Set("id", eventId)
+	data.Set("country_filter", "ALL")
+	data.Set("save", "Save")
+
+	csrfToken := connector.GetCsrfTokenFromAddPage(eventId)
+	data.Set("csrfmiddlewaretoken", csrfToken)
+
+	for _, user := range users {
+		data.Add("players_to_add", user.id)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, connector.baseUrl+"/gem/"+eventId+"/add/", strings.NewReader(data.Encode()))
+	if err != nil {
+		log.Fatal("Connect - Rquest not created ", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", connector.baseUrl)
+	req.Header.Add("X-CSRFToken", csrfToken)
+
+	resp, err := connector.client.Do(req)
+	if err != nil {
+		log.Fatal("Connect - Error during Post: ", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Connect - Status code was not OK: ", resp.StatusCode, resp.Status)
+	}
+	return true
 }
 
 // Regex is more than 3 times faster than using Goquery in this case according to benchmarks
-func (connector *CookieConnector) GetCsrfToken() string {
+func (connector *CookieConnector) GetCsrfTokenFromLoginPage() string {
 	resp, err := connector.client.Get(connector.baseUrl)
 
 	if err != nil {
-		log.Fatalf("GetCsrfToken- Error during Get: %v", err)
+		log.Fatalf("GetCsrfTokenFromLoginPage- Error during Get: %v", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal("GetCsrfToken - Status code was not OK: ", resp.StatusCode, resp.Status)
+		log.Fatal("GetCsrfTokenFromLoginPage - Status code was not OK: ", resp.StatusCode, resp.Status)
 	}
 	defer resp.Body.Close()
 	r, err := regexp.Compile(`<input type="hidden" name="csrfmiddlewaretoken" value="([^"]*)">`)
 	if err != nil {
-		log.Fatal("GetCsrfToken - Regex not compiled: ", err)
+		log.Fatal("GetCsrfTokenFromLoginPage - Regex not compiled: ", err)
 	}
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal("GetCsrfToken - Error while parsing body: ", err)
+		log.Fatal("GetCsrfTokenFromLoginPage - Error while parsing body: ", err)
 	}
 
 	match := r.FindSubmatch(bodyBytes)
 
 	if err != nil {
-		log.Fatal("GetCsrfToken - Regex got an error: ", err)
+		log.Fatal("GetCsrfTokenFromLoginPage - Regex got an error: ", err)
 	}
 
 	if len(match) < 2 || len(match[1]) == 0 {
-		log.Fatal("GetCsrfToken - Csrf token not found")
+		log.Fatal("GetCsrfTokenFromLoginPage - Csrf token not found")
+	}
+
+	return string(match[1])
+}
+
+func (connector *CookieConnector) GetCsrfTokenFromAddPage(eventId string) string {
+	resp, err := connector.client.Get(connector.baseUrl + "/gem/" + eventId + "/run/")
+
+	if err != nil {
+		log.Fatalf("GetCsrfTokenFromAddPage- Error during Get: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("GetCsrfTokenFromAddPage - Status code was not OK: ", resp.StatusCode, resp.Status)
+	}
+	defer resp.Body.Close()
+	r, err := regexp.Compile(`csrfmiddlewaretoken: "([^"]*)",`)
+	if err != nil {
+		log.Fatal("GetCsrfTokenFromAddPage - Regex not compiled: ", err)
+	}
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("GetCsrfTokenFromAddPage - Error while parsing body: ", err)
+	}
+
+	match := r.FindSubmatch(bodyBytes)
+
+	if err != nil {
+		log.Fatal("GetCsrfTokenFromAddPage - Regex got an error: ", err)
+	}
+
+	if len(match) < 2 || len(match[1]) == 0 {
+		log.Fatal("GetCsrfTokenFromAddPage - Csrf token not found")
 	}
 
 	return string(match[1])

@@ -61,5 +61,8 @@ func ImportUsers(username, password, eventId, csvPath string) {
 		usersToAdd = append(usersToAdd, newUser)
 	}
 
-	fmt.Println("ImportUsers - Trying to add users: ", usersToAdd)
+	if !connector.AddUsersToEvent(eventId, usersToAdd) {
+		log.Fatal("ImportUsers - Error while trying to save the users:", usersToAdd)
+	}
+	fmt.Println("ImportUsers - Added those users: ", usersToAdd)
 }
