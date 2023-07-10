@@ -1,7 +1,6 @@
 package importer
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -556,7 +555,6 @@ func TestConnect(t *testing.T) {
 		assert.Equal(t, "/", req.URL.String())
 
 		if req.Method == http.MethodPost {
-			fmt.Println("Here we are")
 			assert.Equal(t, serverUrl, req.Header.Get("Origin"))
 			assert.Equal(t, csrfToken, req.Header.Get("X-CSRFToken"))
 			assert.Equal(t, "application/x-www-form-urlencoded", req.Header.Get("Content-Type"))
