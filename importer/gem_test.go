@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -580,6 +581,81 @@ func TestConnect(t *testing.T) {
 
 	got := connector.Connect()
 	assert.Equal(t, true, got)
+}
+
+func TestGetUserByGemId(t *testing.T) {
+	gemId := "12345"
+	eventId := "67890"
+
+	params := url.Values{}
+	params.Add("q", gemId)
+	params.Add("forward", `{"id":"`+eventId+`","country_filter":"ALL"}`)
+
+	t.Run("Valid user", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "/dal-urls/player-autocomplete-add/?"+params.Encode(), req.URL.String())
+			rw.Write([]byte(`{
+				"results": [
+					{
+						"id": "42314",
+						"text": "Test User (12345)",
+						"selected_text": "Test User (12345)"
+					}
+				],
+				"pagination": {
+					"more": false
+				}
+			}`))
+		}))
+		defer server.Close()
+
+		connector := CookieConnector{client: server.Client(), baseUrl: server.URL}
+		got, err := connector.GetUserByGemId(eventId, gemId)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, User{id: "42314"}, got)
+	})
+
+	t.Run("No user", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "/dal-urls/player-autocomplete-add/?"+params.Encode(), req.URL.String())
+			rw.Write([]byte(`{
+				"results": [],
+				"pagination": {
+					"more": false
+				}
+			}`))
+		}))
+		defer server.Close()
+
+		connector := CookieConnector{client: server.Client(), baseUrl: server.URL}
+		got, err := connector.GetUserByGemId(eventId, gemId)
+		assert.Equal(t, ErrNotFound, err)
+		assert.Equal(t, User{}, got)
+	})
+
+	t.Run("Invalid user", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(t, "/dal-urls/player-autocomplete-add/?"+params.Encode(), req.URL.String())
+			rw.Write([]byte(`{
+				"results": [
+					{
+						"id": null,
+						"text": "Test User (12345)",
+						"selected_text": "Test User (12345)"
+					}
+				],
+				"pagination": {
+					"more": false
+				}
+			}`))
+		}))
+		defer server.Close()
+
+		connector := CookieConnector{client: server.Client(), baseUrl: server.URL}
+		got, err := connector.GetUserByGemId(eventId, gemId)
+		assert.Equal(t, ErrInvalidData, err)
+		assert.Equal(t, User{}, got)
+	})
 }
 
 func TestGetCsrfToken(t *testing.T) {

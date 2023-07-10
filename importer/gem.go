@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -10,6 +11,24 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 )
+
+type GemConnectorError string
+
+func (e GemConnectorError) Error() string {
+	return string(e)
+}
+
+const (
+	ErrNotFound    = GemConnectorError("user was not found")
+	ErrInvalidData = GemConnectorError("user had invalid data")
+)
+
+type ApiResponse struct {
+	Results []struct {
+		Id   string `json:"id"`
+		Text string `json:"text"`
+	} `json:"results"`
+}
 
 // Users know their gemId, but GEM uses its internal userId that is different from the gemId.
 // We need to fetch the userId from the gemId to add the user to the event.
@@ -40,7 +59,7 @@ func (connector *CookieConnector) Connect() bool {
 	csrfToken := connector.GetCsrfToken()
 	data.Set("csrfmiddlewaretoken", csrfToken)
 
-	req, err := http.NewRequest("POST", connector.baseUrl, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest(http.MethodPost, connector.baseUrl, strings.NewReader(data.Encode()))
 	if err != nil {
 		log.Fatal("Rquest not created", err)
 	}
@@ -89,8 +108,38 @@ func (connector *CookieConnector) GetUsersFromEvent(eventId string) []User {
 	return users
 }
 
-func (connector *CookieConnector) GetUserByGemId(gemId string) User {
-	return User{}
+func (connector *CookieConnector) GetUserByGemId(eventId, gemId string) (User, error) {
+	params := url.Values{}
+	params.Add("q", gemId)
+	params.Add("forward", `{"id":"`+eventId+`","country_filter":"ALL"}`)
+
+	resp, err := connector.client.Get(connector.baseUrl + "/dal-urls/player-autocomplete-add/?" + params.Encode())
+	if err != nil {
+		log.Fatal("Error during Get: ", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Status code was not OK: ", resp.StatusCode, resp.Status)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var test ApiResponse
+	json.Unmarshal(bodyBytes, &test)
+
+	if len(test.Results) == 0 {
+		return User{}, ErrNotFound
+	}
+
+	if test.Results[0].Id == "" {
+		return User{}, ErrInvalidData
+	}
+
+	return User{id: test.Results[0].Id}, nil
 }
 
 func (connector *CookieConnector) AddUsersToEvent(eventId string, users []User) bool {
