@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"log"
 	"os"
+	"strings"
 )
 
 type CsvUser struct {
@@ -43,6 +44,13 @@ func getCsvLines(csvPath string) [][]string {
 	defer csvFile.Close()
 
 	csvReader := csv.NewReader(csvFile)
+
+	if strings.HasSuffix(csvPath, "tsv") {
+		csvReader.Comma = '\t'
+	} else if strings.HasSuffix(csvPath, "ssv") {
+		csvReader.Comma = ';'
+	}
+
 	csvData, err := csvReader.ReadAll()
 	if err != nil {
 		log.Fatal("getCsvLines - Error while parsing csv: ", err)
