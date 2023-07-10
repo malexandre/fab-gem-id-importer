@@ -4,11 +4,11 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/malexandre/fab-gem-id-importer/importer"
 	"github.com/spf13/cobra"
 )
 
@@ -49,8 +49,7 @@ var rootCmd = &cobra.Command{
 		password := getStringFromFlagThenEnv(cmd, "password")
 		eventId := getStringFromFlag(cmd, "event-id")
 
-		// TODO: Replace fmt by the business logic
-		fmt.Println("Login as", username, "with password", password, "for event", eventId)
+		importer.ImportUsers(username, password, eventId, args[0])
 	},
 }
 
