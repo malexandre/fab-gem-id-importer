@@ -38,7 +38,7 @@ func getStringFromFlagThenEnv(cmd *cobra.Command, flag string) string {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "fab-gem-id-importer [flags] path_to_csv.csv",
+	Use:   "fab-gem-id-importer [flags] path_to_file.(csv|tsv|ssv)",
 	Short: "fab-gem-id-importer is a tool to import users from a CSV to a GEM event.",
 	Long:  "fab-gem-id-importer is a tool to import users from a CSV to a GEM event. User login and password can be set through .env or with flags.",
 	Args:  cobra.ExactArgs(1),
