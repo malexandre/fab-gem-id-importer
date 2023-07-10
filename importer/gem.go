@@ -61,7 +61,7 @@ func (connector *CookieConnector) Connect() bool {
 
 	req, err := http.NewRequest(http.MethodPost, connector.baseUrl, strings.NewReader(data.Encode()))
 	if err != nil {
-		log.Fatal("Rquest not created", err)
+		log.Fatal("Connect - Rquest not created ", err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Origin", connector.baseUrl)
@@ -69,10 +69,10 @@ func (connector *CookieConnector) Connect() bool {
 
 	resp, err := connector.client.Do(req)
 	if err != nil {
-		log.Fatal("Error during Post: ", err)
+		log.Fatal("Connect - Error during Post: ", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Status code was not OK: ", resp.StatusCode, resp.Status)
+		log.Fatal("Connect - Status code was not OK: ", resp.StatusCode, resp.Status)
 	}
 	return true
 }
@@ -81,17 +81,17 @@ func (connector *CookieConnector) GetUsersFromEvent(eventId string) []User {
 	resp, err := connector.client.Get(connector.baseUrl + "/gem/" + eventId + "/add/")
 
 	if err != nil {
-		log.Fatal("Error during Get: ", err)
+		log.Fatal("GetUsersFromEvent - Error during Get: ", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Status code was not OK: ", resp.StatusCode, resp.Status)
+		log.Fatal("GetUsersFromEvent - Status code was not OK: ", resp.StatusCode, resp.Status)
 	}
 	defer resp.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("GetUsersFromEvent - Error while parsing HTML: ", err)
 	}
 
 	users := []User{}
@@ -99,7 +99,7 @@ func (connector *CookieConnector) GetUsersFromEvent(eventId string) []User {
 	doc.Find("ol>li").Each(func(idx int, item *goquery.Selection) {
 		splits := strings.Split(item.Text(), " (")
 		if len(splits) != 2 || len(splits[1]) == 0 {
-			log.Default().Println("Warning: Possible error while parsing existing user ", item.Text())
+			log.Default().Println("GetUsersFromEvent - Warning! Possible error while parsing existing user: ", item.Text())
 		}
 
 		users = append(users, User{id: "", gemId: splits[1][:len(splits[1])-1]})
@@ -115,17 +115,17 @@ func (connector *CookieConnector) GetUserByGemId(eventId, gemId string) (User, e
 
 	resp, err := connector.client.Get(connector.baseUrl + "/dal-urls/player-autocomplete-add/?" + params.Encode())
 	if err != nil {
-		log.Fatal("Error during Get: ", err)
+		log.Fatal("GetUserByGemId- Error during Get: ", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Status code was not OK: ", resp.StatusCode, resp.Status)
+		log.Fatal("GetUserByGemId - Status code was not OK: ", resp.StatusCode, resp.Status)
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("GetUserByGemId - Error while parsing body: ", err)
 	}
 
 	var test ApiResponse
@@ -151,30 +151,30 @@ func (connector *CookieConnector) GetCsrfToken() string {
 	resp, err := connector.client.Get(connector.baseUrl)
 
 	if err != nil {
-		log.Fatalf("Error during Get: %v", err)
+		log.Fatalf("GetCsrfToken- Error during Get: %v", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Status code was not OK ", resp.StatusCode, resp.Status)
+		log.Fatal("GetCsrfToken - Status code was not OK: ", resp.StatusCode, resp.Status)
 	}
 	defer resp.Body.Close()
 	r, err := regexp.Compile(`<input type="hidden" name="csrfmiddlewaretoken" value="([^"]*)">`)
 	if err != nil {
-		log.Fatal("Regex not compiled: ", err)
+		log.Fatal("GetCsrfToken - Regex not compiled: ", err)
 	}
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("GetCsrfToken - Error while parsing body: ", err)
 	}
 
 	match := r.FindSubmatch(bodyBytes)
 
 	if err != nil {
-		log.Fatal("Regex got an error: ", err)
+		log.Fatal("GetCsrfToken - Regex got an error: ", err)
 	}
 
 	if len(match) < 2 || len(match[1]) == 0 {
-		log.Fatal("Csrf token not found")
+		log.Fatal("GetCsrfToken - Csrf token not found")
 	}
 
 	return string(match[1])
