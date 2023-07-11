@@ -25,5 +25,9 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            LICENSE.txt
-            dist/*
+            dist/fab-gem-id-importer_darwin-amd64.app
+            dist/fab-gem-id-importer_darwin-arm64.app
+            dist/fab-gem-id-importer_linux-arm64
+            dist/fab-gem-id-importer_linux-arm64
+            dist/fab-gem-id-importer_windows-arm64.exe
+            dist/fab-gem-id-importer_windows-arm64.exe
