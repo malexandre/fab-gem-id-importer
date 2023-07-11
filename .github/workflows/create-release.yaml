@@ -29,17 +29,17 @@ jobs:
           token: ${{ github.token }}
           tag: ${{ github.ref_name }}
           excludeTypes: build,docs,other,style,chore
+          writeToFile: false
 
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          makeLatest: true
           body: ${{ steps.changelog.outputs.changes }}
           files: |
             dist/fab-gem-id-importer_darwin-amd64.app
             dist/fab-gem-id-importer_darwin-arm64.app
             dist/fab-gem-id-importer_linux-arm64
-            dist/fab-gem-id-importer_linux-arm64
+            dist/fab-gem-id-importer_linux-amd64
             dist/fab-gem-id-importer_windows-arm64.exe
-            dist/fab-gem-id-importer_windows-arm64.exe
+            dist/fab-gem-id-importer_windows-amd64.exe
