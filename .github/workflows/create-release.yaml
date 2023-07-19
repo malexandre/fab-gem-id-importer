@@ -27,7 +27,7 @@ jobs:
         shell: bash
 
       - name: "Put MacOS arm64 binary in a zip file"
-        run: zip -q -r dist/fab-gem-id-importer_darwin-amd64.zip dist/fab-gem-id-importer_darwin-amd64.app
+        run: zip -q -r dist/fab-gem-id-importer_darwin-arm64.zip dist/fab-gem-id-importer_darwin-arm64.app
         shell: bash
 
       - name: Update CHANGELOG
