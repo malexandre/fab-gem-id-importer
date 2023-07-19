@@ -39,7 +39,7 @@ func getCsvLines(csvPath string) [][]string {
 	csvFile, err := os.Open(csvPath)
 
 	if err != nil {
-		log.Fatal("getCsvLines - Error while opening csv file: ", err)
+		log.Fatalf("Error while opening csv file: %+v", err)
 	}
 	defer csvFile.Close()
 
@@ -53,11 +53,11 @@ func getCsvLines(csvPath string) [][]string {
 
 	csvData, err := csvReader.ReadAll()
 	if err != nil {
-		log.Fatal("getCsvLines - Error while parsing csv: ", err)
+		log.Fatalf("Error while parsing csv: %+v", err)
 	}
 
 	if len(csvData) <= 1 {
-		log.Fatal("getCsvLines - Cannot import an empty CSV")
+		log.Fatal("Cannot import an empty CSV")
 	}
 
 	return csvData
@@ -76,7 +76,7 @@ func getCsvIdx(firstLine []string) (int, int) {
 	}
 
 	if gemidIdx == -1 {
-		log.Fatal(`getCsvIdx - No column named "gemid" in the CSV file`)
+		log.Fatal(`No column named "gemid" in the CSV file`)
 	}
 
 	if nameIdx == -1 {

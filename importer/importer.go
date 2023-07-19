@@ -22,7 +22,7 @@ func ImportUsers(username, password, eventId, csvPath string) {
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		log.Fatal("ImportUsers - Got error while creating cookie jar: ", err)
+		log.Fatalf("Error while creating cookie jar: %+v", err)
 	}
 	client := http.Client{Timeout: time.Duration(60) * time.Second, Jar: jar}
 	connector := CookieConnector{
@@ -33,7 +33,7 @@ func ImportUsers(username, password, eventId, csvPath string) {
 	}
 
 	if !connector.Connect() {
-		log.Fatal("ImportUsers - Unable to log in to GEM server")
+		log.Fatal("Unable to log in to GEM server")
 	}
 
 	existingUsers := connector.GetUsersFromEvent(eventId)
@@ -62,7 +62,7 @@ func ImportUsers(username, password, eventId, csvPath string) {
 	}
 
 	if !connector.AddUsersToEvent(eventId, usersToAdd) {
-		log.Fatal("ImportUsers - Error while trying to save the users:", usersToAdd)
+		log.Fatalf("Error while trying to save the users: %+v", usersToAdd)
 	}
-	fmt.Println("ImportUsers - Added those users: ", usersToAdd)
+	fmt.Println("Added those users: ", usersToAdd)
 }
